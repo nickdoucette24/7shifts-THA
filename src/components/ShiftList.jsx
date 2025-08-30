@@ -18,7 +18,7 @@ export default function ShiftList({ shifts, staff, onAssigned }) {
 
   return (
     <div className="card">
-      <h2>Shifts</h2>
+      <h2 className="form__title">Shifts</h2>
       <ul className="list">
         {shifts.map((sh) => (
           <li key={sh.id} className="row">
@@ -26,7 +26,9 @@ export default function ShiftList({ shifts, staff, onAssigned }) {
               <strong>{sh.day}</strong> — {sh.start} to {sh.end} — ({sh.role})
             </span>
             {sh.assignedStaffId ? (
-              <em> — Assigned: {nameOf(sh.assignedStaffId)}</em>
+              <em>
+                Assigned: <strong>{nameOf(sh.assignedStaffId)}</strong>
+              </em>
             ) : (
               <select
                 defaultValue=""

@@ -4,7 +4,7 @@ import StaffForm from "./components/StaffForm.jsx";
 import StaffList from "./components/StaffList.jsx";
 import ShiftForm from "./components/ShiftForm.jsx";
 import ShiftList from "./components/ShiftList.jsx";
-import "./App.css";
+import "./styles/App.scss";
 
 function App() {
   const [tab, setTab] = useState("staff");
@@ -38,7 +38,7 @@ function App() {
 
   return (
     <div className="container">
-      <h1>7shifts — Staff Scheduling</h1>
+      <h1 className="container__header">7shifts — Staff Scheduling</h1>
 
       <nav className="tabs">
         <button

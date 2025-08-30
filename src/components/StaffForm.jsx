@@ -27,37 +27,44 @@ const StaffForm = ({ onCreated }) => {
 
   return (
     <form className="card form" onSubmit={submit}>
-      <h2>Add Staff</h2>
+      <h2 className="form__title">Add Staff</h2>
       {err && (
         <div role="alert" className="error">
           {err}
         </div>
       )}
-      <label>
+      <label className="form__label">
         Name
         <input
+          className="form__select"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
         />
       </label>
-      <label>
+      <label className="form__label">
         Role
-        <select value={role} onChange={(e) => setRole(e.target.value)} required>
+        <select
+          className="form__select"
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          required
+        >
           <option value="" disabled>
             Select role
           </option>
-          {ROLES.map((r) => (
-            <option key={r} value={r}>
-              {r}
+          {ROLES.map((role) => (
+            <option key={role} value={role}>
+              {role}
             </option>
           ))}
         </select>
       </label>
-      <label>
+      <label className="form__label">
         Phone
         <input
+          className="form__select"
           type="tel"
           placeholder="555-123-4567"
           value={phone}
@@ -65,7 +72,9 @@ const StaffForm = ({ onCreated }) => {
           required
         />
       </label>
-      <button type="submit">Create Staff</button>
+      <button className="form__button" type="submit">
+        Create Staff
+      </button>
     </form>
   );
 };

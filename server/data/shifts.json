@@ -1,1 +1,10 @@
-[]
+[
+    {
+        "day": "2025-09-06",
+        "start": "17:30",
+        "end": "23:30",
+        "role": "manager",
+        "assignedStaffId": "d4fe202f2cd8e620002f0103afe047f1",
+        "id": "3f895d10a166a1cdf6f0b1774ed61289"
+    }
+]
