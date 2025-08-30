@@ -1,5 +1,5 @@
 const http = async (path, { method = "GET", body } = {}) => {
-  const res = await fetch(`api/${path}`, {
+  const res = await fetch(`api${path}`, {
     method,
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
