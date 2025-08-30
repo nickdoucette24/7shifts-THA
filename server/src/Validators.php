@@ -11,6 +11,7 @@ function validate_staff(array $input): array {
   if ($name === '') $err['name'] = 'Name is required.';
   if (!in_array($role, $roles, true)) $err['role'] = 'Role must be server|cook|manager.';
   if (strlen($phone) < 10) $err['phone'] = 'Phone number should have at least 10 digits.';
+  if (strlen($phone) > 15) $err['phone'] = 'Phone number should not exceed 15 digits.';
   if ($err) json_response(['error'=>['message'=>'Validation failed','fields'=>$err]], 422);
   return ['name'=>$name,'role'=>$role,'phone'=>$phone];
 }
