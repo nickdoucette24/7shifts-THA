@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { api } from "./api";
 import StaffForm from "./components/StaffForm.jsx";
 import StaffList from "./components/StaffList.jsx";
-// import ShiftForm from "./components/ShiftForm.jsx";
-// import ShiftList from "./components/ShiftList.jsx";
+import ShiftForm from "./components/ShiftForm.jsx";
+import ShiftList from "./components/ShiftList.jsx";
 import "./App.css";
 
 function App() {
@@ -69,8 +69,8 @@ function App() {
         </section>
       ) : (
         <section>
-          {/* <ShiftForm onCreated={refresh} /> */}
-          {/* <ShiftList shifts={shifts} staff={staff} onAssigned={refresh} /> */}
+          <ShiftForm onCreated={refresh} />
+          <ShiftList shifts={shifts} staff={staff} onAssigned={refresh} />
         </section>
       )}
     </div>
