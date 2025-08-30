@@ -23,10 +23,10 @@ export default function ShiftList({ shifts, staff, onAssigned }) {
         {shifts.map((sh) => (
           <li key={sh.id} className="row">
             <span className="grow">
-              <strong>{sh.day}</strong> — {sh.start}–{sh.end} ({sh.role})
+              <strong>{sh.day}</strong> — {sh.start} to {sh.end} — ({sh.role})
             </span>
             {sh.assignedStaffId ? (
-              <em>Assigned: {nameOf(sh.assignedStaffId)}</em>
+              <em> — Assigned: {nameOf(sh.assignedStaffId)}</em>
             ) : (
               <select
                 defaultValue=""
