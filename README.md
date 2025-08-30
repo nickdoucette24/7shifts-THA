@@ -8,7 +8,7 @@
 
 **Dev UX:** Vite proxy + concurrently
 
-7shifts noted a preference for PHP. I chose plain PHP (no framework) to stay within the timeline scope and keep the code easy to review. In production I would most likely use Laravel.
+There was a noted preference for a PHP backend. I chose plain PHP (no framework) to stay within the timeline scope and keep the code easy to review. In production I would most likely use Laravel.
 
 ## Table of Contents
 
@@ -51,25 +51,25 @@
 
 ## Validation
 
-- Start < end, role enum, phone sanity, role match on assign, prevent overlapping assignments
+- Start < end, roles , phone number characters, role match on assign, prevent overlapping assigned shifts
 
-Project structure
+**Project structure**
 
 ```
-repo-root/
+*root/
 server/
 public/
-index.php # Front controller / tiny router
+index.php # Controller / tiny router
 src/
 DataStore.php # JSON-file persistence (staff.json, shifts.json)
-Validators.php # Input validation + assignment rules
-helpers.php # JSON I/O, time math, overlap check
+Validators.php # Input validation, assignment rules
+helpers.php # JSON work, time math, overlap check
 data/
 staff.json # Seeded as []
 shifts.json # Seeded as []
-src/
-api.js # Frontend API client (fetch wrapper)
-App.jsx # Main UI (tabs: Staff / Shifts)
+root/src/
+api.js # Frontend API
+App.jsx # Main UI
 components/
 StaffForm.jsx
 StaffList.jsx
@@ -109,15 +109,10 @@ If Node is < 20.19, update (nvm recommended). If php is missing:
 
 npm install
 
-# seed JSON "DB" (already in repo as [])
-# server/data/staff.json -> []
-# server/data/shifts.json -> []
-# run client (5173) + PHP server (3001) together
-
 npm run dev
 ```
 
-- [UI: http://localhost:5173](http://localhost:5173)
+- UI: http://localhost:5173
 - API (proxied via Vite): requests to /api/\* are forwarded to http://127.0.0.1:3001
 
 ### Scripts
@@ -136,13 +131,7 @@ npm run dev
 ```
 
 - concurrently runs the client and server in one terminal; -k kills both if one exits; names/colorize output.
-
-### Troubleshooting
-
-- php: command not found → install PHP and restart your terminal.
-- Node version error → Vite needs Node 20.19+ or 22.12+.
-- CORS error → ensure you’re calling fetch('/api/...') (not hardcoding http://127.0.0.1:3001), and that vite.config.js contains the proxy block.
-- 404 on root of API → GET http://127.0.0.1:3001/ returns {"error":"Not found"} by design. Use /api/staff or /api/shifts.
+- this was not required for the assignment, but still is an efficiency add
 
 ## API
 
@@ -155,7 +144,7 @@ npm run dev
 "id": "32hex",
 "name": "Jane Doe",
 "role": "server", // "server" | "cook" | "manager"
-"phone": "555-123-4567" // freeform; validated to have >=10 digits
+"phone": "555-123-4567" // freeform; validated to have 10-15 digits
 }
 ```
 
@@ -188,11 +177,11 @@ Base path during dev: /api (Vite proxy → PHP)
 
 Returns created staff with id.
 
-GET /api/shifts
-Returns all shifts.
+- GET /api/shifts
+  Returns all shifts.
 
-POST /api/shifts
-Body:
+- POST /api/shifts
+  Body:
 
 ```
 { "day": "2025-08-27", "start": "10:00", "end": "16:00", "role": "server" }
@@ -200,8 +189,8 @@ Body:
 
 Returns created shift with id and assignedStaffId: null.
 
-POST /api/shifts/:id/assign
-Body:
+- POST /api/shifts/:id/assign
+  Body:
 
 ```
 { "staffId": "<32hex>" }
@@ -231,21 +220,21 @@ curl -X POST http://127.0.0.1:3001/api/shifts/SHIFT_ID/assign \
  -d '{"staffId":"STAFF_ID"}'
 ```
 
-###Validation & errors
+### Validation & errors
 
-### - Staff
+### Staff
 
 - name: required, non-empty
 - role: one of server|cook|manager
 - phone: must contain at least 10 digits (freeform allowed in storage)
 
-### - Shift
+### Shift
 
 - day: YYYY-MM-DD
 - start, end: HH:MM 24-hour; start < end (no overnight shifts)
 - role: one of server|cook|manager
 
-### - Assign
+### Assign
 
 - staffId: required, must refer to an existing staff
 - Role match: shift.role === staff.role
@@ -253,67 +242,52 @@ curl -X POST http://127.0.0.1:3001/api/shifts/SHIFT_ID/assign \
 
 - Back-to-back (e.g., 12:00–16:00 and 16:00–20:00) is allowed.
 
-### Error shape / status codes
-
-```
-// 422 Unprocessable Entity (validation)
-{
-"error": {
-"message": "Validation failed",
-"fields": { "start": "Use HH:MM", "time": "Start must be before end." }
-}
-}
-
-// 404 Not Found
-{ "error": { "message": "Shift not found" } }
-```
-
 ## Frontend
 
 ### UI flows
 
-### - Staff tab
+### Staff tab
 
 - Create staff (name, role, phone)
 - List all staff
 
-### - Shifts tab
+### Shifts tab
 
 - Create shifts (day, start, end, role)
-- List shifts; if unassigned, choose a staff (filtered by role) from a dropdown to assign
+- List shifts, and if unassigned, choose a staff (filtered by role) from a dropdown to assign
 
 After each create/assign, the app refreshes both lists.
 
 ### Responsiveness
 
 - Mobile (1080×1920): stacked forms/lists with native inputs.
-- Desktop (≥1400×1000): two-column form layout using simple CSS; container width ~1200px.
+- Desktop (≥1400×1000): two-column form layout using simple SCSS/SASS; container width ~1200px.
 
 Accessibility basics:
 
-- Semantic labels on inputs
+- Semantic labels
 - role="alert" for error messages
-- Buttons have clear text; simple keyboard operation
+- Buttons have clear text and simple keyboard operation
 
 ## Design decisions
 
-### - Plain PHP over a framework (Laravel/Slim):
+### Plain PHP over a framework (Laravel/Slim):
 
 For a 4–6h take-home, this keeps setup minimal and the code easy to review. It also surfaces core skills: routing, validation, and business rules.
 
-### - JSON file persistence:
+### JSON file persistence:
 
 It’s enough to show CRUD + validation + assignment rules without database setup overhead. Files live at server/data/\*.json. (Production would use a real DB.)
 
-### - Tiny front controller:
+### Tiny front controller:
 
-server/public/index.php uses a compact switch/regex router to keep everything visible in one file. In production, I’d introduce a real router/framework.
+server/public/index.php uses a compact switch router to keep everything visible in one file. In production, I’d introduce a real router/framework.
 
-### - Vite proxy for DX:
+### Vite proxy for DX:
 
-The frontend calls /api/\* and Vite proxies to PHP—no CORS, no env juggling in dev.
+The frontend calls /api/\* and Vite proxies to PHP no CORS, no env juggling in dev.
 
-### - One small fetch client (src/api.js):
+### One small fetch client (src/api.js):
 
 Centralized headers, error handling, and JSON parsing; components remain simple.
 
@@ -333,42 +307,33 @@ If I had more time, I’d add:
 
 ## Assumptions & limitations
 
-- Single restaurant/location; no authentication
+- Single restaurant/location, no authentication
 - No editing/deleting staff/shifts (not required by brief)
 - No overnight shifts (start must be strictly before end)
-- Basic phone sanity (≥10 digits); format is not enforced
+- Basic phone sanity (10-15 digits)
 - No time zones (day/time treated as local)
-- In-memory-like simplicity for queries (O(n) scans) — OK for demo
 
 ## If I had more time / Production notes
 
 ### Backend
 
-- Framework: Laravel (routing, validation, Eloquent, migrations, auth scaffolding)
-- DB: SQLite for local/dev, PostgreSQL in production; proper migrations & seeders
-- Domain rules: richer overlap logic, overnight support with end-date, role hierarchies
-- Validation: dedicated FormRequests; stricter phone normalization (E.164) and locale support
-- Error handling: centralized exception handler; structured error codes
-- Observability: request logging, metrics, structured logs
+- Framework: Laravel (for improved routing, validation, migrations, auth)
+- Editing/Deleting of shifts and staff
+- Overnight shift compatibility
+- DB: SQLite / PostgreSQL in production; proper migrations & seeders
+- Validation: dedicated FormRequests; stricter phone normalization, and
+- Error handling: centralized exception handler with structured error codes
 
 ### Frontend
 
-- State/data: TanStack Query for caching/retries & mutation states
-- Forms: field-level error display using server fields map; better accessibility
+- Forms: better accessibility, more information options
 - UX: filters (by day/role), pagination for larger datasets
 - Tests: broader unit + E2E coverage
 
-### DevOps
-
-- Env configuration (dotenv) and VITE_API_BASE for non-proxied deployments
-- Docker compose for PHP + Node dev parity
-- CI (lint, type check, test) + simple CD
-- Nginx/Apache reverse proxy /api to the PHP app in production
-
 ## Timeboxing & commits
 
-I kept commits small and descriptive (e.g., feat(api): add validators and JSON datastore, feat(ui): shift create + assign). This mirrors a typical PR flow and makes it easy to review the evolution of the solution.
+I kept commits very descriptive for this assignment in order to allow for easy code review.
 
 ## Access
 
-Per instructions, the assignment brief itself is not included in the repo. The repo is invite-only; collaborators have been added. If you need access or have questions, feel free to reach out.
+Per instructions, the assignment brief itself is not included in the repo. The repo is invite-only; collaborators have been added. If you need access or have questions, feel free to reach out!
