@@ -59,26 +59,40 @@ There was a noted preference for a PHP backend. I chose plain PHP (no framework)
 *root/
 server/
 public/
-index.php # Controller / tiny router
+  index.php # Controller / tiny router
 src/
-DataStore.php # JSON-file persistence (staff.json, shifts.json)
-Validators.php # Input validation, assignment rules
-helpers.php # JSON work, time math, overlap check
+  DataStore.php # JSON-file persistence (staff.json, shifts.json)
+  Validators.php # Input validation, assignment rules
+  helpers.php # JSON work, time math, overlap check
 data/
-staff.json # Seeded as []
-shifts.json # Seeded as []
+  staff.json # Seeded as []
+  shifts.json # Seeded as []
+phpunit.xml
+tests/
+  bootstrap.php
+  DataStoreTest.php
+  HelpersTest.php
+  ValidatorsTest.php
 root/src/
-api.js # Frontend API
-App.jsx # Main UI
-components/
-StaffForm.jsx
-StaffList.jsx
-ShiftForm.jsx
-ShiftList.jsx
-App.css # Light styles
-vite.config.js # /api proxy -> PHP server
-package.json
-README.md # (this file)
+  api.js # Frontend API
+  App.jsx # Main UI
+   index.scss
+  components/
+    StaffForm.jsx
+    StaffList.jsx
+    ShiftForm.jsx
+    ShiftList.jsx
+  test/
+    setup.js
+    __tests__/
+      StaffForm.test.jsx
+      StaffList.test.jsx
+      ShiftForm.test.jsx
+      ShiftList.test.jsx
+  App.scss
+  vite.config.js # /api proxy -> PHP server
+  package.json
+  README.md # (this file)
 ```
 
 ## Getting started
@@ -88,12 +102,14 @@ README.md # (this file)
 - Node.js: 20.19+ or 22.12+ (Vite requirement)
 - npm: 9+ (comes with Node)
 - PHP: 8.x (CLI)
+- Composer (backend test)
 
 Check:
 
 ```
 node -v
 php -v
+composer -V
 ```
 
 If Node is < 20.19, update (nvm recommended). If php is missing:
@@ -125,7 +141,9 @@ npm run dev
 "dev:server": "php -S 127.0.0.1:3001 -t server/public server/public/index.php",
 "build": "vite build",
 "preview": "vite preview",
-"test": "vitest --environment jsdom"
+"test": "vitest --run",
+"test:watch": "vitest",
+"test:php": "cd server && ./vendor/bin/phpunit"
 }
 }
 ```
@@ -258,10 +276,11 @@ curl -X POST http://127.0.0.1:3001/api/shifts/SHIFT_ID/assign \
 
 After each create/assign, the app refreshes both lists.
 
-### Responsiveness
+### Styling & Responsiveness
 
-- Mobile (1080×1920): stacked forms/lists with native inputs.
-- Desktop (≥1400×1000): two-column form layout using simple SCSS/SASS; container width ~1200px.
+- **Files:** src/index.scss (global base), src/App.scss (layout/components)
+- **Approach:** mobile-first defaults; one breakpoint at 1081px so that mobile responsiveness is locked into ≤ 1080px and desktop is locked into ≥ 1081px (which covers the requirements of 1400px)
+- **Containers:** 63.5rem/1280px on large screens for a clean desktop layout
 
 Accessibility basics:
 
@@ -271,39 +290,88 @@ Accessibility basics:
 
 ## Design decisions
 
-### Plain PHP over a framework (Laravel/Slim):
+- Plain PHP over a framework (Laravel/Slim):
+  For a 4–6h take-home, this keeps setup minimal and the code easy to review. It also surfaces core skills: routing, validation, and business rules.
 
-For a 4–6h take-home, this keeps setup minimal and the code easy to review. It also surfaces core skills: routing, validation, and business rules.
+- JSON file persistence:
+  It’s enough to show CRUD + validation + assignment rules without database setup overhead. Files live at server/data/\*.json. (Production would use a real DB.)
 
-### JSON file persistence:
+- Tiny front controller:
+  server/public/index.php uses a compact switch router to keep everything visible in one file. In production, I’d introduce a real router/framework.
 
-It’s enough to show CRUD + validation + assignment rules without database setup overhead. Files live at server/data/\*.json. (Production would use a real DB.)
+- Vite proxy for DX:
+  The frontend calls /api/\* and Vite proxies to PHP no CORS, no env juggling in dev.
 
-### Tiny front controller:
-
-server/public/index.php uses a compact switch router to keep everything visible in one file. In production, I’d introduce a real router/framework.
-
-### Vite proxy for DX:
-
-The frontend calls /api/\* and Vite proxies to PHP no CORS, no env juggling in dev.
-
-### One small fetch client (src/api.js):
-
-Centralized headers, error handling, and JSON parsing; components remain simple.
+- One small fetch client (src/api.js):
+  Centralized headers, error handling, and JSON parsing; components remain simple.
 
 ## Testing
 
-I included a minimal UI test setup with Vitest + React Testing Library (example: StaffForm happy path). Run:
+### Frontend (Vitest + React Testing Library)
+
+- **Setup**
+  - npm i -D vitest @testing-library/react @testing-library/user-event@testing-library/jest-dom jsdom
+  - vite.config.js test block:
 
 ```
-npm test
+test: { environment: 'jsdom', setupFiles: './src/test/setup.js' }
+```
+
+- src/test/setup.js:
+
+```
+import '@testing-library/jest-dom/vitest';
+import { afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
+afterEach(() => cleanup());
+```
+
+- **What's covered**
+  - `StaffForm` valid staff members (asserts api.createStaff)
+  - `ShiftForm` valid shifts (asserts api.createShift)
+  - `ShiftList` assignment flow (select staff → asserts api.assignShift)
+  - `StaffList` renders multiple entries + empty state
+
+```
+npm test           # single run
+npm run test:watch # watch mode
+```
+
+### Backend (PHPUnit 10)
+
+- **Install**
+
+```
+cd server
+composer require --dev phpunit/phpunit:^10
+```
+
+- **Config:** server/phpunit.xml
+  , bootstrap loads helpers.php, DataStore.php, Validators.php.
+- **What's covered:**
+
+  - **Helpers:** as_minutes, overlaps
+  - **DataStore:** create, upsert, getAll, findById
+  - **Validators & assignment:**
+    - Success paths tested directly
+    - Error paths
+      - `validate_staff` rejects invalid role
+      - `validate_shift` rejects start after end
+      - `assign_shift` rejects role mismatch
+      - `assign_shift` rejects overlap
+    - The tests launch a tiny child PHP process, capture JSON output, and assert message/fields. This keeps production code simple (validators still call json_response(...); exit;) while fully testing error behavior.
+
+- **Run**
+
+```
+npm run test:php
+# or
+cd server && ./vendor/bin/phpunit
 ```
 
 If I had more time, I’d add:
 
 - Backend request tests in PHP (PHPUnit/Pest) for create staff/shift, role mismatch, overlap rejection
-- More component tests (ShiftForm/ShiftList)
-- An end-to-end smoke test (Playwright)
 
 ## Assumptions & limitations
 
