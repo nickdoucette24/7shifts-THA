@@ -1,35 +1,80 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from "react";
+import { api } from "./api";
+import StaffForm from "./components/StaffForm.jsx";
+import StaffList from "./components/StaffList.jsx";
+import ShiftForm from "./components/ShiftForm.jsx";
+import ShiftList from "./components/ShiftList.jsx";
+import "./styles/App.scss";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [tab, setTab] = useState("staff");
+  const [staff, setStaff] = useState([]);
+  const [shifts, setShifts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  async function refresh() {
+    setLoading(true);
+    setError("");
+    try {
+      // Parallel fetching and loading
+      const [staffData, shiftsData] = await Promise.all([
+        api.getStaff(),
+        api.getShifts(),
+      ]);
+      setStaff(staffData);
+      setShifts(shiftsData);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Initial page load
+  useEffect(() => {
+    refresh();
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+    <div className="container">
+      <h1 className="container__header">7shifts — Staff Scheduling</h1>
+
+      <nav className="tabs">
+        <button
+          className={tab === "staff" ? "active" : ""}
+          onClick={() => setTab("staff")}
+        >
+          Staff
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+        <button
+          className={tab === "shifts" ? "active" : ""}
+          onClick={() => setTab("shifts")}
+        >
+          Shifts
+        </button>
+      </nav>
+
+      {error && (
+        <div role="alert" className="error">
+          {error}
+        </div>
+      )}
+      {loading ? (
+        <p>Loading…</p>
+      ) : tab === "staff" ? (
+        <section>
+          <StaffForm onCreated={refresh} />
+          <StaffList staff={staff} />
+        </section>
+      ) : (
+        <section>
+          <ShiftForm onCreated={refresh} />
+          <ShiftList shifts={shifts} staff={staff} onAssigned={refresh} />
+        </section>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
