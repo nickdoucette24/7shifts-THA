@@ -1,18 +1,18 @@
 <?php
 declare(strict_types=1);
 
+// DataStore
 class DataStore {
-  // Directory for JSON file database
+  // Direct to JSON db
   private string $dir;
   public function __construct(string $dir) { $this->dir = $dir; }
   private function path(string $key): string { return $this->dir . '/' . $key . '.json'; }
 
-  // Read data from JSON file with $key being the distinguishing factor
+  // Read data from JSON file
   private function read(string $key): array {
     $p = $this->path($key);
     if (!file_exists($p)) return [];
     $data = json_decode(file_get_contents($p), true);
-    // return full array if valid, empty array if not
     return is_array($data) ? $data : [];
   }
 
@@ -21,7 +21,7 @@ class DataStore {
     file_put_contents($this->path($key), json_encode($rows, JSON_PRETTY_PRINT));
   }
 
-  // Get all records for a given key
+  // Get all records
   public function getAll(string $key): array { return $this->read($key); }
 
   // Find a record by its ID

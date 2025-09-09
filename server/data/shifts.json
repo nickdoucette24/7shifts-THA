@@ -1,10 +1,34 @@
 [
     {
-        "day": "2025-09-06",
-        "start": "17:30",
-        "end": "23:30",
+        "day": "2025-09-04",
+        "start": "12:00",
+        "end": "13:00",
         "role": "manager",
         "assignedStaffId": "d4fe202f2cd8e620002f0103afe047f1",
-        "id": "3f895d10a166a1cdf6f0b1774ed61289"
+        "id": "6b7d4a23565d112459934cc20fc3b796"
+    },
+    {
+        "day": "2025-09-04",
+        "start": "12:00",
+        "end": "13:00",
+        "role": "cook",
+        "assignedStaffId": "cea7dee842b935db83dd4b1100071cac",
+        "id": "996bf6ea15d879abbd80fff187fbd85c"
+    },
+    {
+        "day": "2025-09-04",
+        "start": "12:00",
+        "end": "13:00",
+        "role": "server",
+        "assignedStaffId": "1a417afbcc74045f117d138ffbe9d583",
+        "id": "4182345563164d805ad6ecfdaa26f1d6"
+    },
+    {
+        "day": "2025-09-17",
+        "start": "16:00",
+        "end": "17:00",
+        "role": "cook",
+        "assignedStaffId": "cea7dee842b935db83dd4b1100071cac",
+        "id": "b1ffb261433fc0cac6bd26ffd115a6ba"
     }
 ]
