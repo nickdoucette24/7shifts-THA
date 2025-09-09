@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// Proxy routing
+// Proxy routing to avoid CORS in dev
 export default defineConfig({
   plugins: [react()],
   server: {

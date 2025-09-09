@@ -7,16 +7,11 @@ final class ValidatorsTest extends TestCase
 
     protected function setUp(): void
     {
-        // Absolute path to server/ so we can bootstrap inside child PHP processes
         $root = realpath(__DIR__ . '/..');
         $this->assertNotFalse($root, 'Failed to resolve server root');
         $this->serverRoot = $root;
     }
 
-    /**
-     * Run a short PHP snippet in a separate PHP process.
-     * Returns [combinedOutput, exitCode].
-     */
     private function runPhp(string $snippet): array
     {
         $tmp = tempnam(sys_get_temp_dir(), 'phptest_');
@@ -33,8 +28,6 @@ final class ValidatorsTest extends TestCase
         @unlink($tmp);
         return [implode("\n", $lines), $code];
     }
-
-    /* ---------- Success paths (direct calls) ---------- */
 
     public function testValidateStaffSuccess(): void
     {
@@ -92,8 +85,6 @@ final class ValidatorsTest extends TestCase
         }
     }
 
-    /* ---------- Error paths (run in external PHP process) ---------- */
-
     public function testValidateStaffRejectsBadRole(): void
     {
         [$out, $code] = $this->runPhp(<<<'PHP'
@@ -105,7 +96,7 @@ validate_staff([
 PHP);
         $this->assertStringContainsString('"Validation failed"', $out);
         $this->assertStringContainsString('"role"', $out);
-        $this->assertSame(0, $code); // json_response exits without a non-zero code
+        $this->assertSame(0, $code);
     }
 
     public function testValidateShiftRejectsStartAfterEnd(): void

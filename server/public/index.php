@@ -1,5 +1,5 @@
 <?php
-// Strict typing, CORS, and preflight (OPTIONS)
+// Strict typing and preflight (OPTIONS)
 declare(strict_types=1);
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
@@ -9,12 +9,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Load helpers, small JSON db, and validators
+// Load helpers, JSON persistence, and validators
 require __DIR__ . '/../src/helpers.php';
 require __DIR__ . '/../src/DataStore.php';
 require __DIR__ . '/../src/Validators.php';
 
-// Removing /api prefix, trim trailing /, normalize empty to /, prepping datastore
+// Parse the request to the server
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = rtrim(preg_replace('#^/api#', '', $path), '/');
 if ($path === '') $path = '/';
@@ -22,7 +22,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 $input  = read_json();
 $store  = new DataStore(__DIR__ . '/../data');
 
-// Routing controller using Switch/Case for one-file simplicity
+// Router using Switch/Case for one-file simplicity
 switch (true){
   // Staff
   case $method === 'GET'  && $path === '/staff':

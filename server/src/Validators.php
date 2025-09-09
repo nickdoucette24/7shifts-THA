@@ -42,7 +42,7 @@ function validate_assign(array $input): array {
   return ['staffId'=>$staffId];
 }
 
-// Assign a shift to a staff member
+// Assign a shift to a staff member validation
 function assign_shift(DataStore $store, string $shiftId, string $staffId): array {
   $shift = $store->findById('shifts', $shiftId);
   if (!$shift) json_response(['error'=>['message'=>'Shift not found']], 404);

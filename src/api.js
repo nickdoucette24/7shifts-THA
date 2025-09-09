@@ -1,3 +1,4 @@
+// HTTP request helper function
 const http = async (path, { method = "GET", body } = {}) => {
   const res = await fetch(`api${path}`, {
     method,
@@ -9,9 +10,11 @@ const http = async (path, { method = "GET", body } = {}) => {
   return data;
 };
 
+// API call helper functions
 const get = (p) => http(p);
 const post = (p, b) => http(p, { method: "POST", body: b });
 
+// Object of API functions
 export const api = {
   getStaff: () => get("/staff"),
   createStaff: (payload) => post("/staff", payload),
@@ -21,4 +24,5 @@ export const api = {
     post(`/shifts/${shiftId}/assign`, { staffId }),
 };
 
+// Global roles
 export const ROLES = ["server", "cook", "manager"];
