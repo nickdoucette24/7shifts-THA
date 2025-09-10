@@ -53,13 +53,28 @@ function assign_shift(DataStore $store, string $shiftId, string $staffId): array
   }
 
   // Prevent overlap for same staff + same day
-  foreach ($store->getAll('shifts') as $s) {
-    if ($s['id'] === $shift['id']) continue;
-    if (($s['assignedStaffId'] ?? null) === $staffId && ($s['day'] ?? '') === $shift['day']) {
-      if (overlaps($s['start'], $s['end'], $shift['start'], $shift['end'])) {
-        json_response(['error'=>['message'=>'Shift overlaps an existing assignment']], 422);
-      }
-    }
+  // ! New DB-backed validation
+  $q = $store->pdo()->prepare("
+    SELECT 1
+    FROM shifts
+    WHERE assigned_staff_id = :staffId
+      AND day = :day
+      AND id <> :id
+      AND start < :end
+      AND :start < end
+    LIMIT 1
+  ");
+
+  $q->execute([
+    ':staffId' => $staffId,
+    ':day'     => $shift['day'],
+    ':id'      => $shift['id'],
+    ':start'   => $shift['start'],
+    ':end'     => $shift['end'],
+  ]);
+
+  if ($q->fetch()) {
+    json_response(['error'=>['message'=>'Shift overlaps an existing assignment']], 422);
   }
 
   $shift['assignedStaffId'] = $staffId;
