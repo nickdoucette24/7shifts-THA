@@ -4,7 +4,7 @@
 
 **Frontend:** React + Vite (JavaScript)
 
-**Backend:** Plain PHP, JSON file database
+**Backend:** Plain PHP + SQLite (PDO)
 
 **Dev UX:** Vite proxy + concurrently
 
@@ -17,6 +17,7 @@ There was a noted preference for a PHP backend. I chose plain PHP (no framework)
 - [Getting started](#getting-started)
   - [Requirements](#requirements)
   - [Install & run (dev)](#install--run-dev)
+  - [Database (SQLite)](#database)
   - [Scripts](#scripts)
   - [Troubleshooting](#troubleshooting)
 - [API](#api)
@@ -65,8 +66,9 @@ src/
   Validators.php # Input validation, assignment rules
   helpers.php # JSON work, time math, overlap check
 data/
-  staff.json # Seeded as []
-  shifts.json # Seeded as []
+  app.db
+db/
+  schema.sql
 phpunit.xml
 tests/
   bootstrap.php
@@ -102,6 +104,7 @@ root/src/
 - Node.js: 20.19+ or 22.12+ (Vite requirement)
 - npm: 9+ (comes with Node)
 - PHP: 8.x (CLI)
+- PDO SQLite
 - Composer (backend test)
 
 Check:
@@ -109,6 +112,7 @@ Check:
 ```
 node -v
 php -v
+php -m (should show pdo_sqlite or sqlite3)
 composer -V
 ```
 
@@ -130,6 +134,21 @@ npm run dev
 
 - UI: http://localhost:5173
 - API (proxied via Vite): requests to /api/\* are forwarded to http://127.0.0.1:3001
+
+### Database (SQLite)
+
+- The DB is a file at server/data/app.db
+- You don't need to create it, the first API call will create it along with the schema.
+- Inspect via:
+
+```
+sqlite3 server/data/app.db
+.headers on
+.mode table
+.tables
+SELECT * FROM staff; // or shifts
+.quit
+```
 
 ### Scripts
 
@@ -293,8 +312,8 @@ Accessibility basics:
 - Plain PHP over a framework (Laravel/Slim):
   For a 4–6h take-home, this keeps setup minimal and the code easy to review. It also surfaces core skills: routing, validation, and business rules.
 
-- JSON file persistence:
-  It’s enough to show CRUD + validation + assignment rules without database setup overhead. Files live at server/data/\*.json. (Production would use a real DB.)
+- SQLite:
+  Gives durability, simple relational checks with foreign keys. Would also add a couple small indexes to speed up validation checks in production.
 
 - Tiny front controller:
   server/public/index.php uses a compact switch router to keep everything visible in one file. In production, I’d introduce a real router/framework.
