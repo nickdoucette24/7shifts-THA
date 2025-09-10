@@ -1,52 +1,190 @@
 <?php
 declare(strict_types=1);
 
-// DataStore
-class DataStore {
-  // Direct to JSON db
-  private string $dir;
-  public function __construct(string $dir) { $this->dir = $dir; }
-  private function path(string $key): string { return $this->dir . '/' . $key . '.json'; }
+final class DataStore
+{
+    private \PDO $pdo;
 
-  // Read data from JSON file
-  private function read(string $key): array {
-    $p = $this->path($key);
-    if (!file_exists($p)) return [];
-    $data = json_decode(file_get_contents($p), true);
-    return is_array($data) ? $data : [];
-  }
+    public function __construct(string $dataDir)
+    {
+        $dbPath = rtrim($dataDir, '/').'/app.db';
+        @mkdir($dataDir, 0777, true);
 
-  // Write data to JSON file, using Pretty Print for readability. Would use SQL in production.
-  private function write(string $key, array $rows): void {
-    file_put_contents($this->path($key), json_encode($rows, JSON_PRETTY_PRINT));
-  }
-
-  // Get all records
-  public function getAll(string $key): array { return $this->read($key); }
-
-  // Find a record by its ID
-  public function findById(string $key, string $id): ?array {
-    foreach ($this->read($key) as $row) if (($row['id'] ?? null) === $id) return $row;
-    return null;
-  }
-
-  // Update or insert a record by its ID
-  public function upsert(string $key, array $row): array {
-    $rows = $this->read($key);
-    $found = false;
-    // Iterate through existing rows
-    for ($i=0; $i<count($rows); $i++) {
-      if (($rows[$i]['id'] ?? null) === $row['id']) { $rows[$i] = $row; $found = true; break; }
+        $this->pdo = new \PDO('sqlite:'.$dbPath);
+        $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $this->pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+        $this->pdo->exec('PRAGMA foreign_keys = ON');
+        $this->initSchema();
     }
-    if (!$found) $rows[] = $row;
-    $this->write($key, $rows);
-    return $row;
-  }
 
-  // Create a new record with a unique ID
-  public function create(string $key, array $payload): array {
-    $row = $payload;
-    $row['id'] = bin2hex(random_bytes(16)); // 32-hex id
-    return $this->upsert($key, $row);
-  }
+    private function initSchema(): void
+    {
+        $sql = file_exists(__DIR__.'/../db/schema.sql')
+            ? file_get_contents(__DIR__.'/../db/schema.sql')
+            : "
+            PRAGMA foreign_keys = ON;
+            CREATE TABLE IF NOT EXISTS staff (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              role TEXT NOT NULL CHECK (role IN ('server','cook','manager')),
+              phone TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS shifts (
+              id TEXT PRIMARY KEY,
+              day TEXT NOT NULL,
+              start TEXT NOT NULL,
+              end TEXT NOT NULL,
+              role TEXT NOT NULL CHECK (role IN ('server','cook','manager')),
+              assigned_staff_id TEXT NULL,
+              FOREIGN KEY (assigned_staff_id) REFERENCES staff(id) ON DELETE RESTRICT
+            );
+            ";
+        $this->pdo->exec($sql);
+    }
+
+    private function newId(): string
+    {
+        return bin2hex(random_bytes(16));
+    }
+
+    public function getAll(string $name): array
+    {
+        switch ($name) {
+            case 'staff':
+                $stmt = $this->pdo->query(
+                    "SELECT id, name, role, phone
+                     FROM staff
+                     ORDER BY name"
+                );
+                return $stmt->fetchAll();
+
+            case 'shifts':
+                $stmt = $this->pdo->query(
+                    "SELECT id, day, start, end, role,
+                            assigned_staff_id AS assignedStaffId
+                     FROM shifts
+                     ORDER BY day, start"
+                );
+                return $stmt->fetchAll();
+
+            default:
+                return [];
+        }
+    }
+
+    public function findById(string $name, string $id): ?array
+    {
+        switch ($name) {
+            case 'staff':
+                $stmt = $this->pdo->prepare(
+                    "SELECT id, name, role, phone FROM staff WHERE id = :id"
+                );
+                break;
+            case 'shifts':
+                $stmt = $this->pdo->prepare(
+                    "SELECT id, day, start, end, role,
+                            assigned_staff_id AS assignedStaffId
+                     FROM shifts WHERE id = :id"
+                );
+                break;
+            default:
+                return null;
+        }
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function create(string $name, array $row): array
+    {
+        if ($name === 'staff') {
+            $id = $this->newId();
+            $stmt = $this->pdo->prepare(
+                "INSERT INTO staff (id, name, role, phone)
+                 VALUES (:id, :name, :role, :phone)"
+            );
+            $stmt->execute([
+                ':id'    => $id,
+                ':name'  => $row['name'],
+                ':role'  => $row['role'],
+                ':phone' => $row['phone'],
+            ]);
+            return ['id'=>$id] + $row;
+        }
+
+        if ($name === 'shifts') {
+            $id = $this->newId();
+            $stmt = $this->pdo->prepare(
+                "INSERT INTO shifts (id, day, start, end, role, assigned_staff_id)
+                 VALUES (:id, :day, :start, :end, :role, :assigned)"
+            );
+            $stmt->execute([
+                ':id'       => $id,
+                ':day'      => $row['day'],
+                ':start'    => $row['start'],
+                ':end'      => $row['end'],
+                ':role'     => $row['role'],
+                ':assigned' => $row['assignedStaffId'] ?? null,
+            ]);
+            return ['id'=>$id] + $row;
+        }
+
+        return [];
+    }
+
+    public function upsert(string $name, array $row): array
+    {
+        if ($name === 'staff') {
+            $stmt = $this->pdo->prepare(
+                "UPDATE staff
+                 SET name = :name, role = :role, phone = :phone
+                 WHERE id = :id"
+            );
+            $stmt->execute([
+                ':name'  => $row['name'],
+                ':role'  => $row['role'],
+                ':phone' => $row['phone'],
+                ':id'    => $row['id'],
+            ]);
+            return $this->findById('staff', $row['id']);
+        }
+
+        if ($name === 'shifts') {
+            $stmt = $this->pdo->prepare(
+                "UPDATE shifts
+                 SET day = :day, start = :start, end = :end, role = :role,
+                     assigned_staff_id = :assigned
+                 WHERE id = :id"
+            );
+            $stmt->execute([
+                ':day'      => $row['day'],
+                ':start'    => $row['start'],
+                ':end'      => $row['end'],
+                ':role'     => $row['role'],
+                ':assigned' => $row['assignedStaffId'] ?? null,
+                ':id'       => $row['id'],
+            ]);
+            return $this->findById('shifts', $row['id']);
+        }
+
+        return [];
+    }
+
+    public function delete(string $name, string $id): bool
+    {
+        switch ($name) {
+            case 'staff':
+                $stmt = $this->pdo->prepare("DELETE FROM staff WHERE id = :id");
+                break;
+            case 'shifts':
+                $stmt = $this->pdo->prepare("DELETE FROM shifts WHERE id = :id");
+                break;
+            default:
+                return false;
+        }
+        $stmt->execute([':id' => $id]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function pdo(): \PDO { return $this->pdo; }
 }
